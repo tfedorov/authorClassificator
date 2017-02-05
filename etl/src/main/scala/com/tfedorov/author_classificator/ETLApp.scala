@@ -28,12 +28,13 @@ object ETLApp extends App {
     val newFileName = s"${OUTPUT_FOLDER}/${file.getName}"
 
     val extract: (String) => String = readFile
-    val transform: (String) => String = LemmaTransformer(_)
+    val transform: (String) => String = TokenTransformer(_)
     val load: (String) => Unit = write2NewFile(newFileName)
 
-    val etlResult = Try(extract(file.getAbsolutePath))
-      .map(transform(_))
-      .map(load)
+    val etlResult =
+      Try(extract(file.getAbsolutePath))
+        .map(transform(_))
+        .map(load)
     if (etlResult.isFailure)
       println(etlResult.failed)
   }

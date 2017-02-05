@@ -1,4 +1,5 @@
 .idea
 .iml
-target
+etl/target
 etl/etl.iml
+output/
