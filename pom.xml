@@ -9,13 +9,18 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>etl</module>
+        <module>sparkclassifier</module>
     </modules>
     <packaging>pom</packaging>
 
     <properties>
-        <scala.version>2.12.1</scala.version>
+        <scala.version>2.11.8</scala.version>
+        <maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -41,6 +46,20 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.scala-tools</groupId>
+                <artifactId>maven-scala-plugin</artifactId>
+                <version>${maven-scala-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>add-source</goal>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -1,5 +1,5 @@
 .idea
-.iml
 etl/target
 etl/etl.iml
 output/
+sparkclassifier/target/
