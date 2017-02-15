@@ -1,7 +1,6 @@
 package com.tfedorov.aturho.spark
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.rdd.RDD
 
 /**
   * Created by Taras_Fedorov on 2/13/2017.
