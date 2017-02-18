@@ -1,6 +1,6 @@
 package com.tfedorov.aturho.spark
 
-import org.apache.spark.ml.feature.Word2Vec
+import com.tfedorov.aturho.spark.w2v.Word2VecProcessing
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 
@@ -9,7 +9,7 @@ import org.apache.spark.sql.functions._
   */
 object MLibApp extends App {
 
-  private val OUTPUT_FOLDER = "D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\*"
+  val OUTPUT_FOLDER = "D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\*"
 
 
   val sqlContext = SparkSession.builder.
@@ -30,16 +30,16 @@ object MLibApp extends App {
   val trainingDF = sqlContext.createDataFrame(resRDD).toDF("text", "label")
   val testDF = sqlContext.createDataFrame(Seq((4L, Seq("тому")), (5L, Seq("що")), (6L, Seq("раз")))).toDF("id", "text")
 
-  val pipeline = HashingTFModel()
-  val pipeline2 = Word2VecModel()
-  val hashingTFmodel = pipeline.fit(trainingDF)
+  // val pipeline = HashingTFModel()
+  //val w2vProcessing = Word2VecProcessing()
+  //val hashingTFmodel = pipeline.fit(trainingDF)
 
-  val word2vecM =  pipeline2.fit(trainingDF)
-  word2vecM.transform(trainingDF).foreach(println(_))
+  //val word2vecM = w2vProcessing.fit(trainingDF)
+  //word2vecM.transform(trainingDF).foreach(println(_))
 
   // Make predictions on test documents.
-  val prediction = hashingTFmodel.transform(testDF)
+  //val prediction = hashingTFmodel.transform(testDF)
 
-  prediction.collect().foreach(println(_))
+  //prediction.collect().foreach(println(_))
 
 }

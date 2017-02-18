@@ -11,21 +11,27 @@ import scala.util.{Failure, Try}
   */
 object ETLApp extends App {
 
-  private val INPUT_FOLDER = "etl/src/main/resources/inputRawData"
-  private val OUTPUT_FOLDER = "D:\\work\\workspace\\pet_projects\\authorClassificator\\output"
+  case class DataPaths(inputFolder: String, outputFolder: String)
 
-  val directory = new File(INPUT_FOLDER)
+  val trainPaths = DataPaths("etl/src/main/resources/trainRawData",
+    "D:/work/workspace/pet_projects/authorClassificator/output/train")
+  val testPaths = DataPaths("etl/src/main/resources/testRawData",
+    "D:/work/workspace/pet_projects/authorClassificator/output/test")
+
+  val appPaths = trainPaths
+
+  val directory = new File(appPaths.inputFolder)
 
   if (!directory.isDirectory) {
-    println(s" Parameter - [${INPUT_FOLDER}] is not a folder")
+    println(s" Parameter - [${appPaths.inputFolder}] is not a folder")
     System.exit(0)
   }
 
-  createIfNotExist(OUTPUT_FOLDER)
+  createIfNotExist(appPaths.outputFolder)
   println(s"Start to proccess [${directory.getAbsolutePath}]")
 
   for (file <- directory.listFiles) {
-    val newFileName = s"${OUTPUT_FOLDER}/${file.getName}"
+    val newFileName = s"${appPaths.outputFolder}/${file.getName}"
 
     val extract: (String) => String = readFile
     val transform: (String) => String = TokenTransformer(_)
@@ -38,6 +44,6 @@ object ETLApp extends App {
     if (etlResult.isFailure)
       println(etlResult.failed)
   }
-  println(s"Finish successfully. See [$OUTPUT_FOLDER] for result")
+  println(s"Finish successfully. See [${appPaths.outputFolder}] for result")
 
 }
