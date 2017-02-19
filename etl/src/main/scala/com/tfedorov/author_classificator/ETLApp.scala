@@ -13,10 +13,14 @@ object ETLApp extends App {
 
   case class DataPaths(inputFolder: String, outputFolder: String)
 
-  val trainPaths = DataPaths("etl/src/main/resources/trainRawData",
-    "D:/work/workspace/pet_projects/authorClassificator/output/train")
-  val testPaths = DataPaths("etl/src/main/resources/testRawData",
-    "D:/work/workspace/pet_projects/authorClassificator/output/test")
+  val projectDir = "D:/work/workspace/pet_projects/authorClassificator"
+
+  val trainPaths = DataPaths(
+    s"$projectDir/output/raw/trainRawData",
+    s"$projectDir/output/train")
+  val testPaths = DataPaths(
+    s"$projectDir/output/testRawData",
+    s"$projectDir/output/test")
 
   val appPaths = trainPaths
 

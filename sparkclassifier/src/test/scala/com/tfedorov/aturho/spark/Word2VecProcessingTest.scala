@@ -30,16 +30,4 @@ class Word2VecProcessingTest extends AbstractSparkTest {
     Word2VecProcessing.train(trainingDF, testRDD)
   }
 
-
-  @Test
-  def testHashingTF(): Unit = {
-
-    val trainRDD = sqlContext.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
-      .rdd.map(el => (Seq(el.get(1).toString), (el.get(0).toString.charAt(72).asDigit - 1 * 1.0).toFloat))
-
-    val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
-
-    val trainingDF = sqlContext.createDataFrame(trainRDD).toDF("text", "label")
-    HashingTFProcessing(trainingDF, testRDD)
-  }
 }

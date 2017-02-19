@@ -1,5 +1,9 @@
-.idea
+.idea/
 etl/target
-etl/etl.iml
+*/*.iml
 output/
 sparkclassifier/target/
+etl/src/main/resources/
+etl/src/test/
+sparkclassifier/spark-warehouse/
+
