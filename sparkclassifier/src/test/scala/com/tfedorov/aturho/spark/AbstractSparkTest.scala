@@ -10,18 +10,11 @@ import org.testng.annotations.BeforeClass
   */
 class AbstractSparkTest extends Assert {
 
-  var sqlContext: SparkSession = null
-  var sc: SparkContext = null
-
-  @BeforeClass
-  def initTest(): Unit = {
-    sqlContext = SparkSession.builder.
-      master("local")
-      .appName("spark test")
-      .getOrCreate()
-
-    sc = sqlContext.sparkContext
-  }
+  val sparkSession: SparkSession = SparkSession.builder.
+    master("local")
+    .appName("spark test")
+    .getOrCreate()
+  val sc: SparkContext = sparkSession.sparkContext
 
 
 }

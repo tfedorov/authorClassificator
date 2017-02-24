@@ -13,7 +13,7 @@ class Word2VecProcessingTest extends AbstractSparkTest {
 
   @Test(enabled = false)
   def smokeTests(): Unit = {
-    val traindDF = sqlContext.createDataFrame(Seq(("aaa", 0.0.toFloat))).toDF
+    val traindDF = sparkSession.createDataFrame(Seq(("aaa", 0.0.toFloat))).toDF
     // Word2VecProcessing.train(traindDF)
   }
 
@@ -21,12 +21,12 @@ class Word2VecProcessingTest extends AbstractSparkTest {
   @Test
   def testInputW2V(): Unit = {
 
-    val trainRDD = sqlContext.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
+    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (Seq(el.get(1).toString), (el.get(0).toString.charAt(72).asDigit - 1 * 1.0).toFloat))
 
     val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
 
-    val trainingDF = sqlContext.createDataFrame(trainRDD).toDF("text", "label")
+    val trainingDF = sparkSession.createDataFrame(trainRDD).toDF("text", "label")
     Word2VecProcessing.train(trainingDF, testRDD)
   }
 

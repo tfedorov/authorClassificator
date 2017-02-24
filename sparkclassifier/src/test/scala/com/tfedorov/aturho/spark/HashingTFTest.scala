@@ -13,26 +13,15 @@ class HashingTFTest extends AbstractSparkTest {
   @Test
   def testHashingTF(): Unit = {
 
-    val trainRDD = sqlContext.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
+    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (Seq(el.get(1).toString), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
     val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
 
-    val trainingDF = sqlContext.createDataFrame(trainRDD).toDF("text", "label")
+    val trainingDF = sparkSession.createDataFrame(trainRDD).toDF("text", "label")
 
     HashingTFProcessing(trainingDF, testRDD)
   }
 
-  @Test
-  def testTF(): Unit = {
 
-    val trainRDD = sqlContext.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
-      .rdd.map(el => (Seq(el.get(1).toString), (el.get(0).toString.charAt(72).asDigit).toFloat))
-
-    val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
-
-    val trainingDF = sqlContext.createDataFrame(trainRDD).toDF("text", "label")
-
-    TermFrequencyProcessin(trainingDF, testRDD)
-  }
 }

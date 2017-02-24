@@ -21,7 +21,7 @@ object HashingTFProcessing {
 
     val gropuedDF = featurizedDF.groupBy("label", "text").count().where("count > 10").sort("text")
 
-    //gropued.foreach(println(_))
+    //featurizedDF.foreach(println(_))
     //gropued.printSchema()
 
     gropuedDF.join(countAllDF, "label").printSchema()
