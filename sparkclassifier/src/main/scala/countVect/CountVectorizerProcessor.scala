@@ -1,8 +1,10 @@
 package countVect
 
 import com.tfedorov.aturho.spark.tf.Word
+import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature._
 import org.apache.spark.ml.linalg.{SparseVector, Vectors}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 /**
@@ -10,15 +12,17 @@ import org.apache.spark.sql.{Dataset, SparkSession}
   */
 object CountVectorizerProcessor {
 
-  case class LabelText(label: Float, allText: Seq[String])
+  case class LabelText(label: Float, allText: Seq[String], wordsCount: Int)
 
   val wordsDeterm = Seq("від", "навіть", "про", "які", "до", "та", "як", "із", "що", "під", "на", "не", "для", "за", "тому", "україни", "це")
 
-
-  def apply(trainDS: Dataset[Word])(implicit sparkSession: SparkSession) = {
+  def apply(trainDS: Dataset[Word], testRDD: RDD[Iterable[String]])(implicit sparkSession: SparkSession) = {
     import sparkSession.implicits._
 
-    val trainedDS = trainDS.rdd.groupBy((_.label)).map(k => LabelText(k._1, k._2.map(_.text).toSeq)).toDS()
+    val stopWordsDS = trainDS.rdd.groupBy((_.label)).map { k =>
+      val words = k._2.map(_.text).toSeq
+      LabelText(k._1, words, words.size)
+    }.toDS()
 
     //trainDS.rdd.groupBy((_.label)).map(k => LabelText(k._1, k._2.map(_.text).toSeq)).foreach(println(_))
 
@@ -27,17 +31,33 @@ object CountVectorizerProcessor {
     val cvModel: CountVectorizerModel = new CountVectorizer()
       .setInputCol("allText")
       .setOutputCol("features")
-      .fit(Seq(LabelText(1.0.toFloat, wordsDeterm)).toDS())
+      .fit(Seq(LabelText(1.0.toFloat, wordsDeterm, wordsDeterm.size)).toDS())
 
-    val resultDS = cvModel.transform(trainedDS)
-    //resultDS.show(false)
+    val resultDS = cvModel.transform(stopWordsDS)
 
-    val addDS = resultDS.map { r => (r.getFloat(0).toInt, r.get(2).asInstanceOf[SparseVector].values.map(_ * 0.5), Vectors.dense(35.0)) }.toDF("id", "features", "vec2")
-
-    addDS.printSchema()
-    addDS.show(false)
+    val addDS = resultDS.map {
+      r => (r.getFloat(0).toInt, Vectors.dense(r.get(3).asInstanceOf[SparseVector].values.map(_ * 1.0 / r.getInt(2))))
+    }.toDF("label", "features")
 
 
-    //interaction.transform(addDS).show()
+    val mlr = new LogisticRegression()
+      .setMaxIter(10)
+      .setRegParam(0.3)
+      .setElasticNetParam(0.8)
+      .setFamily("multinomial")
+
+    val mlrModel = mlr.fit(addDS)
+
+    mlrModel.transform(addDS).show(true)
+
+    val resultTestDS = cvModel.transform(
+      testRDD.map(e => (1.0, e.toSeq, e.toSeq.size)).toDF("label", "allText", "count"))
+    resultTestDS.show(true)
+
+    val addTestDS = resultTestDS.map {
+      r => (r.getDouble(0).toInt, Vectors.dense(r.get(3).asInstanceOf[SparseVector].values.map(_ * 1.0 / r.getInt(2))))
+    }.toDF("label", "features")
+    mlrModel.transform(addTestDS).show(true)
+
   }
 }
