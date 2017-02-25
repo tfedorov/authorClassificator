@@ -18,7 +18,6 @@ object StopWordCountTranformer {
 
     val inpPlusStopWordDS = input.map(input => LabelTextCount(input.label, STOP_WORDS ++ input.allText, input.wordsCount))
 
-
     val cvModel: CountVectorizerModel = new CountVectorizer()
       .setInputCol("allText")
       .setOutputCol("features")
