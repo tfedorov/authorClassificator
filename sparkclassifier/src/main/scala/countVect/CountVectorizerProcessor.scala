@@ -14,29 +14,27 @@ object CountVectorizerProcessor {
 
   case class LabelText(label: Float, allText: Seq[String], wordsCount: Int)
 
-  val wordsDeterm = Seq("від", "навіть", "про", "які", "до", "та", "як", "із", "що", "під", "на", "не", "для", "за", "тому", "україни", "це")
+  val wordsDeterm = Seq("від", "навіть", "про", "які", "до", "та", "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
 
-  def apply(trainDS: Dataset[Word], testRDD: RDD[Iterable[String]])(implicit sparkSession: SparkSession) = {
+  def apply(trainDS: Dataset[Word], testDS: Dataset[Word])(implicit sparkSession: SparkSession) = {
     import sparkSession.implicits._
 
-    val stopWordsDS = trainDS.rdd.groupBy((_.label)).map { k =>
-      val words = k._2.map(_.text).toSeq
+    val trainGroupDS = trainDS.rdd.groupBy((_.label)).map { k =>
+      //val words = wordsDeterm ++ k._2.map(_.text).toSeq
+      val words = wordsDeterm ++ k._2.map(_.text).toSeq
       LabelText(k._1, words, words.size)
-    }.toDS()
+    }.toDS().as[LabelText]
 
-    //trainDS.rdd.groupBy((_.label)).map(k => LabelText(k._1, k._2.map(_.text).toSeq)).foreach(println(_))
-
-    //    val trainedDS = trainDS.map(w => LabelText(w.label, Seq(w.text)))
 
     val cvModel: CountVectorizerModel = new CountVectorizer()
       .setInputCol("allText")
       .setOutputCol("features")
       .fit(Seq(LabelText(1.0.toFloat, wordsDeterm, wordsDeterm.size)).toDS())
 
-    val resultDS = cvModel.transform(stopWordsDS)
+    val cvTrainDS = cvModel.transform(trainGroupDS)
 
-    val addDS = resultDS.map {
-      r => (r.getFloat(0).toInt, Vectors.dense(r.get(3).asInstanceOf[SparseVector].values.map(_ * 1.0 / r.getInt(2))))
+    val trainLabelFeatureDS = cvTrainDS.map {
+      r => (r.getFloat(0).toInt, vectorMultiple(r.get(3).asInstanceOf[SparseVector], 1.0 / r.getInt(2)))
     }.toDF("label", "features")
 
 
@@ -46,18 +44,35 @@ object CountVectorizerProcessor {
       .setElasticNetParam(0.8)
       .setFamily("multinomial")
 
-    val mlrModel = mlr.fit(addDS)
+    val mlrModel = mlr.fit(trainLabelFeatureDS)
 
-    mlrModel.transform(addDS).show(true)
+    val testGroupDS = testDS.rdd.groupBy((_.label)).map { k =>
+      val words = wordsDeterm ++ k._2.map(_.text).toSeq
+      LabelText(k._1, words, words.size)
+    }.toDS().as[LabelText]
 
-    val resultTestDS = cvModel.transform(
-      testRDD.map(e => (1.0, e.toSeq, e.toSeq.size)).toDF("label", "allText", "count"))
-    resultTestDS.show(true)
+    val cvTestDS = cvModel.transform(testGroupDS)
 
-    val addTestDS = resultTestDS.map {
-      r => (r.getDouble(0).toInt, Vectors.dense(r.get(3).asInstanceOf[SparseVector].values.map(_ * 1.0 / r.getInt(2))))
+    val testLabelFeatureDS = cvTestDS.map {
+      r => (r.getFloat(0).toInt, vectorMultiple(r.get(3).asInstanceOf[SparseVector], 1.0 / r.getInt(2)))
     }.toDF("label", "features")
-    mlrModel.transform(addTestDS).show(true)
+    /*
+        println("testDS.show()")
+        testDS.show()
+        println("testGroupDS")
+        testGroupDS.show()
+        println("cvTestDS")
+        cvTestDS.show()
+        println("testLabelFeatureDS")
+        testLabelFeatureDS.show()
+        println(mlrModel.explainParams())
+    */
 
+    mlrModel.transform(testLabelFeatureDS).show(true)
+
+  }
+
+  private def vectorMultiple(vector: SparseVector, multiPlicator: Double) = {
+    Vectors.dense(vector.values.map(_ * multiPlicator)).toSparse
   }
 }

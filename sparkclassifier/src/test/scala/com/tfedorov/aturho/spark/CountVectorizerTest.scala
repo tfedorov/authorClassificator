@@ -18,10 +18,13 @@ class CountVectorizerTest extends AbstractSparkTest {
     val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
-    val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
+    val testRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\*").select(input_file_name, col("value"))
+      .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(71).asDigit).toFloat))
+
     import sparkSession.implicits._
     val trainingDS = sparkSession.createDataset(trainRDD.map(el => Word(el._1, el._2))).as[Word]
+    val testDS = sparkSession.createDataset(testRDD.map(el => Word(el._1, el._2))).as[Word]
 
-    CountVectorizerProcessor(trainingDS, testRDD)(sparkSession)
+    CountVectorizerProcessor(trainingDS, testDS)(sparkSession)
   }
 }

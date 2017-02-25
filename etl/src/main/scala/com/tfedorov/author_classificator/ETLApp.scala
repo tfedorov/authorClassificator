@@ -19,10 +19,10 @@ object ETLApp extends App {
     s"$projectDir/output/raw/trainRawData",
     s"$projectDir/output/train")
   val testPaths = DataPaths(
-    s"$projectDir/output/testRawData",
+    s"$projectDir/output/raw/testRawData",
     s"$projectDir/output/test")
 
-  val appPaths = trainPaths
+  val appPaths = testPaths
 
   val directory = new File(appPaths.inputFolder)
 
