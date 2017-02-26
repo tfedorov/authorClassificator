@@ -74,17 +74,20 @@ class CountVectorizerTest extends AbstractSparkTest {
       val words = k._2.map(_.text).toSeq
       LabelTextCount(k._1, words, words.size)
     }.toDS()
-    val sWtrans = new SWTransformer(sparkSession)
+    val sWtrans = new SWTransformer()
 
     val mlr = new LogisticRegression()
       .setMaxIter(10)
       .setRegParam(0.3)
+      .setFeaturesCol("features")
       .setElasticNetParam(0.8)
       .setFamily("multinomial")
 
     val pipeline = new Pipeline().setStages(Array(sWtrans, mlr))
     val model = pipeline.fit(trainGroupDS)
-    model.transform(testGroupDS).show()
+    val resultDF = model.transform(testGroupDS)
+    //resultDF.printSchema()
+    resultDF.show()
 
   }
 }

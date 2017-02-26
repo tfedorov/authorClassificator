@@ -4,18 +4,25 @@ import countVect.{LabelFeature, LabelTextCount}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
 import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.ml.param.shared.{HasInputCol, HasOutputCol}
 import org.apache.spark.ml.util._
-import org.apache.spark.sql.catalyst.expressions.{GenericRow, GenericRowWithSchema}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
 /**
   * Created by Taras_Fedorov on 2/25/2017.
   */
-class SWTransformer(sparkSession: SparkSession) extends Transformer with DefaultParamsWritable {
+object SWTransformer {
+  val STOP_WORDS_DEFAULT = Seq("від", "навіть", "про", "які", "до", "та",
+    "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
 
-  val STOP_WORDS = Seq("від", "навіть", "про", "які", "до", "та", "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
-  val STOP_WORDS_LABEL_TERMS = Seq(LabelTextCount(1.0.toFloat, STOP_WORDS, STOP_WORDS.size))
+}
+
+class SWTransformer(stopWords: Seq[String] = SWTransformer.STOP_WORDS_DEFAULT) extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
+
+  val STOP_WORDS_LABEL_TERMS = Seq(LabelTextCount(1.0.toFloat, stopWords, stopWords.size))
+
+  val sparkSession = SparkSession.builder().getOrCreate()
 
   import sparkSession.implicits._
 
@@ -26,39 +33,30 @@ class SWTransformer(sparkSession: SparkSession) extends Transformer with Default
 
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-    import sparkSession.implicits._
-    val inpPlusStopWordDS = dataset.map { labTextCnt =>
-      LabelTextCount(labTextCnt.label, STOP_WORDS ++ labTextCnt.allText, labTextCnt.wordsCount)
+    //import sparkSession.implicits._
+    //dataset.toDF().withColumn()
+    val extendedTextDF = dataset.toDF().map { row =>
+      val label = row.getAs[Float]("label")
+      val extendedText = stopWords ++ row.getAs[Seq[String]]("allText")
+      LabelTextCount(label, extendedText, extendedText.size)
     }
-    cvModel.transform(inpPlusStopWordDS).map { row =>
-      val label = row.getFloat(0)
-      val featureVector = row.get(3).asInstanceOf[SparseVector]
-      val oneWordFrequency: Double = 1.0 / row.getInt(2)
+    val transform1: DataFrame = cvModel.transform(extendedTextDF)
+
+    transform1.map { row =>
+      val label = row.getAs[Float]("label")
+      val featureVector = row.getAs[SparseVector]("features")
+      val oneWordFrequency: Double = 1.0 / row.getAs[Seq[String]]("allText").size
       LabelFeature(label, featureVector) * oneWordFrequency
-    }.toDF("label", "features")
+    }.toDF()
   }
 
-  implicit def any2LabelTextCount(any: Any): LabelTextCount = {
-    if (any.isInstanceOf[LabelTextCount])
-      return any.asInstanceOf[LabelTextCount]
-
-    val genericRow = any.asInstanceOf[GenericRow]
-    val seq = genericRow.getSeq[String](1)
-    LabelTextCount(genericRow.getFloat(0), seq, seq.size)
-
-  }
 
   override def copy(extra: ParamMap): Transformer = ???
 
   override def transformSchema(schema: StructType): StructType = {
-
-    //val inputType = schema("allText").dataType
-    //require(inputType.sameType(ArrayType(StringType)),
-    //  s"Input type must be ArrayType(StringType) but got $inputType.")
-    //SchemaUtils.appendColumn(schema, $(outputCol), inputType, schema($(inputCol)).nullable)
-    val field = new StructField("features", new VectorUDT(), true)
-    StructType(schema.fields :+ field)
+    SchemaUtils.appendColumn(schema, "features", new VectorUDT(), false)
   }
 
   override val uid: String = "1234"
+
 }
