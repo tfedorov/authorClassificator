@@ -5,6 +5,7 @@ import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasInputCol, HasOutputCol}
 import org.apache.spark.ml.util._
+import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
@@ -38,22 +39,20 @@ class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) e
       val extendedText = stopWords ++ row.getAs[Seq[String]]("allText")
       LabelTextCount(label, extendedText, extendedText.size)
     }
-    //extendedTextDF.show()
-    val countedListWords: DataFrame = cvModel.transform(extendedTextDF)
-    //countedListWords.show()
-    //countedListWords.foreach(println(_))
-    val res = countedListWords.map { row =>
+
+    val countedListWords = cvModel.transform(extendedTextDF)
+
+    //dataset.withColumn("changed", vectorizer(col("allText"))).show()
+    val result = countedListWords.map { row =>
       val label = row.getAs[Float]("label")
       val featureVector = row.getAs[SparseVector]("features")
       val oneWordFrequency: Double = 1.0 / row.getAs[Seq[String]]("allText").size
+
       LabelFeature(label, featureVector) * oneWordFrequency
     }.toDF()
+    result
 
-    //res.show()
-    //res.foreach(println(_))
-    res
   }
-
 
   override def copy(extra: ParamMap): Transformer = ???
 

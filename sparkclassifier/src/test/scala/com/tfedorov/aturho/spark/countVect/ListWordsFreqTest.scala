@@ -19,28 +19,35 @@ case class SentenceLabel(sentence: String, label: Float) {
   }
 }
 
-class ListWordsFreqTest extends AbstractSparkTest {
+case class SentenceLabelArticle(sentence: String, label: Float, article: String)
 
+case class WordArticle(text: String, label: Float, article: String)
+
+case class LabelTextCountArticle(label: Float, allText: Seq[String], wordsCount: Int, article: String)
+
+class ListWordsFreqTest extends AbstractSparkTest {
   @Test
   def testSW(): Unit = {
     val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
-      .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
+      .rdd.map(el => SentenceLabel(el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
     val testRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\*").select(input_file_name, col("value"))
-      .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(71).asDigit).toFloat))
+      .rdd.map(el => WordArticle(el.getString(1), (el.get(0).toString.charAt(71).asDigit).toFloat, el.get(0).toString.substring(71)))
 
     import sparkSession.implicits._
-    val trainingDS = sparkSession.createDataset(trainRDD.map(el => Word(el._1, el._2))).as[Word]
-    val testDS = sparkSession.createDataset(testRDD.map(el => Word(el._1, el._2))).as[Word]
+    val trainingDS = sparkSession.createDataset(trainRDD.map(el => Word(el.sentence, el.label))).as[Word]
+    val testDS = sparkSession.createDataset(testRDD).as[WordArticle]
 
     val trainGroupDS = trainingDS.rdd.groupBy((_.label)).map { k =>
       val words = k._2.map(_.text).toSeq
       LabelTextCount(k._1, words, words.size)
     }.toDS()
-    val testGroupDS = testDS.rdd.groupBy((_.label)).map { k =>
+    val testGroupDS = testDS.rdd.groupBy((_.article)).map { k =>
       val words = k._2.map(_.text).toSeq
-      LabelTextCount(k._1, words, words.size)
+      val label = k._2.head.label
+      LabelTextCountArticle(label, words, words.size, k._1)
     }.toDS()
+    testGroupDS.show()
 
     val sWtrans = new ListWordsFreq()
 
@@ -60,18 +67,17 @@ class ListWordsFreqTest extends AbstractSparkTest {
 
   }
 
-
   @Test
-  def testNew(): Unit = {
+  def testRegexTokenizer(): Unit = {
     val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\raw\\trainRawData*").select(input_file_name, col("value"))
       .rdd.map(file => SentenceLabel(file.getString(1), (file.get(0).toString.charAt(83).asDigit).toFloat))
 
     val testRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\raw\\testRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(file.getString(1), (file.get(0).toString.charAt(82).asDigit).toFloat))
+      .rdd.map(file => SentenceLabelArticle(file.getString(1), (file.get(0).toString.charAt(82).asDigit).toFloat, file.get(0).toString.substring(82)))
 
     import sparkSession.implicits._
     val trainDS = trainRDD.groupBy(_.label).map(_._2.reduce(_ + _)).toDS()
-    val testDS = testRDD.groupBy(_.label).map(_._2.reduce(_ + _)).toDS()
+    val testDS = testRDD.toDS()
 
     //val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
     val regexTokenizer = new RegexTokenizer()
@@ -95,46 +101,4 @@ class ListWordsFreqTest extends AbstractSparkTest {
     model.transform(testDS).show()
   }
 
-  @Test
-  def testUnion(): Unit = {
-    //assertNotNull(null)
-
-    val trainRDD1 = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
-      .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
-
-    import sparkSession.implicits._
-    val trainingDS1 = sparkSession.createDataset(trainRDD1.map(el => Word(el._1, el._2))).as[Word]
-
-    val trainGroupDS1 = trainingDS1.rdd.groupBy((_.label)).map { k =>
-      val words = k._2.map(_.text).toSeq
-      LabelTextCount(k._1, words, words.size)
-    }.toDS()
-
-    val trainRDD2 = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\raw\\trainRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(file.getString(1), (file.get(0).toString.charAt(83).asDigit).toFloat))
-
-    val trainDS2 = trainRDD2.groupBy(_.label).map {
-      e =>
-        val str = e._2.map(_.sentence).mkString(" ");
-        SentenceLabel(str, e._1)
-    }.toDS().as[SentenceLabel]
-
-    //val tokenizer = new Tokenizer().setInputCol("sentence").setOutputCol("words")
-    val regexTokenizer = new RegexTokenizer()
-      .setInputCol("sentence")
-      .setOutputCol("allText")
-      .setPattern("""[ ,.!?№()-\\—\\"_$]""") // alternatively .setPattern("\\w+").setGaps(false)
-
-
-    //val sWtrans = new ListWordsFreq()
-    //sWtrans.transform(trainGroupDS1).foreach(println(_))
-    trainGroupDS1.select("label", "allText").foreach(println(_))
-
-    println("***********")
-    //sWtrans.transform(r2).foreach(println(_))
-    val r2 = regexTokenizer.transform(trainDS2)
-    r2.select("label", "allText").foreach(println(_))
-
-
-  }
 }
