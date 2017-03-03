@@ -1,6 +1,5 @@
 package org.apache.spark.ml.linalg
 
-import countVect.{LabelFeature, LabelTextCount}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
 import org.apache.spark.ml.param.ParamMap
@@ -12,15 +11,15 @@ import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 /**
   * Created by Taras_Fedorov on 2/25/2017.
   */
-object SWTransformer {
-  val STOP_WORDS_DEFAULT = Seq("від", "навіть", "про", "які", "до", "та",
-    "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
+object ListWordsFreq {
 
+  val LIST_WORDS_DEFAULT = Seq("від", "навіть", "про", "які", "до", "та",
+    "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
 }
 
-class SWTransformer(stopWords: Seq[String] = SWTransformer.STOP_WORDS_DEFAULT) extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
+class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
 
-  val STOP_WORDS_LABEL_TERMS = Seq(LabelTextCount(1.0.toFloat, stopWords, stopWords.size))
+  val LIST_WORDS_LABEL_TERMS = Seq(LabelTextCount(1.0.toFloat, stopWords, stopWords.size))
 
   val sparkSession = SparkSession.builder().getOrCreate()
 
@@ -29,25 +28,30 @@ class SWTransformer(stopWords: Seq[String] = SWTransformer.STOP_WORDS_DEFAULT) e
   val cvModel: CountVectorizerModel = new CountVectorizer()
     .setInputCol("allText")
     .setOutputCol("features")
-    .fit(STOP_WORDS_LABEL_TERMS.toDS())
+    .fit(LIST_WORDS_LABEL_TERMS.toDS())
 
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-    //import sparkSession.implicits._
-    //dataset.toDF().withColumn()
+
     val extendedTextDF = dataset.toDF().map { row =>
       val label = row.getAs[Float]("label")
       val extendedText = stopWords ++ row.getAs[Seq[String]]("allText")
       LabelTextCount(label, extendedText, extendedText.size)
     }
-    val transform1: DataFrame = cvModel.transform(extendedTextDF)
-
-    transform1.map { row =>
+    //extendedTextDF.show()
+    val countedListWords: DataFrame = cvModel.transform(extendedTextDF)
+    //countedListWords.show()
+    //countedListWords.foreach(println(_))
+    val res = countedListWords.map { row =>
       val label = row.getAs[Float]("label")
       val featureVector = row.getAs[SparseVector]("features")
       val oneWordFrequency: Double = 1.0 / row.getAs[Seq[String]]("allText").size
       LabelFeature(label, featureVector) * oneWordFrequency
     }.toDF()
+
+    //res.show()
+    //res.foreach(println(_))
+    res
   }
 
 
