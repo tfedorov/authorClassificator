@@ -40,18 +40,7 @@ class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) e
       LabelTextCount(label, extendedText, extendedText.size)
     }
 
-    val countedListWords = cvModel.transform(extendedTextDF)
-
-    //dataset.withColumn("changed", vectorizer(col("allText"))).show()
-    val result = countedListWords.map { row =>
-      val label = row.getAs[Float]("label")
-      val featureVector = row.getAs[SparseVector]("features")
-      val oneWordFrequency: Double = 1.0 / row.getAs[Seq[String]]("allText").size
-
-      LabelFeature(label, featureVector) * oneWordFrequency
-    }.toDF()
-    result
-
+    cvModel.transform(extendedTextDF)
   }
 
   override def copy(extra: ParamMap): Transformer = ???

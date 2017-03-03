@@ -5,7 +5,7 @@ import com.tfedorov.aturho.spark.tf.Word
 import countVect.LabelTextCount
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.feature.RegexTokenizer
+import org.apache.spark.ml.feature.{MaxAbsScaler, MinMaxScaler, RegexTokenizer}
 import org.apache.spark.ml.linalg.ListWordsFreq
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.testng.annotations.Test
@@ -91,14 +91,16 @@ class ListWordsFreqTest extends AbstractSparkTest {
     val mlr = new LogisticRegression()
       .setMaxIter(10)
       .setRegParam(0.3)
-      .setFeaturesCol("features")
-      .setElasticNetParam(0.8)
+      .setFeaturesCol("featuresScaled")
+      .setElasticNetParam(0.4)
       .setFamily("multinomial")
 
-    val pipeline = new Pipeline().setStages(Array(regexTokenizer, sWtrans, mlr))
-    //trainDS.show()
+    val scaler = new MaxAbsScaler().setInputCol("features").setOutputCol("featuresScaled")
+    val pipeline = new Pipeline().setStages(Array(regexTokenizer, sWtrans, scaler, mlr))
+
     val model = pipeline.fit(trainDS)
     model.transform(testDS).show()
+
   }
 
 }
