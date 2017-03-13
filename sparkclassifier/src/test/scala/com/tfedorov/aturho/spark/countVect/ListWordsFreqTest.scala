@@ -5,7 +5,7 @@ import com.tfedorov.aturho.spark.tf.Word
 import countVect.LabelTextCount
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.feature.{MaxAbsScaler, MinMaxScaler, RegexTokenizer}
+import org.apache.spark.ml.feature._
 import org.apache.spark.ml.linalg.ListWordsFreq
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.testng.annotations.Test
@@ -26,6 +26,7 @@ case class WordArticle(text: String, label: Float, article: String)
 case class LabelTextCountArticle(label: Float, allText: Seq[String], wordsCount: Int, article: String)
 
 class ListWordsFreqTest extends AbstractSparkTest {
+  /*
   @Test
   def testSW(): Unit = {
     val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
@@ -66,14 +67,14 @@ class ListWordsFreqTest extends AbstractSparkTest {
     resultDF.show()
 
   }
-
+*/
   @Test
   def testRegexTokenizer(): Unit = {
-    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\raw\\trainRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(file.getString(1), (file.get(0).toString.charAt(83).asDigit).toFloat))
+    val trainRDD = sparkSession.read.text("../output/raw/trainRawData*").select(input_file_name, col("value"))
+      .rdd.map(file => SentenceLabel(file.getString(1).toLowerCase, (file.get(0).toString.charAt(83).asDigit).toFloat))
 
-    val testRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\raw\\testRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabelArticle(file.getString(1), (file.get(0).toString.charAt(82).asDigit).toFloat, file.get(0).toString.substring(82)))
+    val testRDD = sparkSession.read.text("../output/raw/testRawData*").select(input_file_name, col("value"))
+      .rdd.map(file => SentenceLabelArticle(file.getString(1).toLowerCase, (file.get(0).toString.charAt(82).asDigit).toFloat, file.get(0).toString.substring(82)))
 
     import sparkSession.implicits._
     val trainDS = trainRDD.groupBy(_.label).map(_._2.reduce(_ + _)).toDS()
@@ -83,10 +84,14 @@ class ListWordsFreqTest extends AbstractSparkTest {
     val regexTokenizer = new RegexTokenizer()
       .setInputCol("sentence")
       .setOutputCol("allText")
-      .setPattern("""[ ,.!?№()-\\—\\"_$]""") // alternatively .setPattern("\\w+").setGaps(false)
+      .setPattern("""[ ,.!?№()-/—\\"_$]""") // alternatively .setPattern("\\w+").setGaps(false)
 
 
-    val sWtrans = new ListWordsFreq()
+    val listWordsFreq = new ListWordsFreq()
+
+    //val scaler = new MaxAbsScaler().setInputCol("features").setOutputCol("featuresScaled")
+    val scaler = new MinMaxScaler().setInputCol("features").setOutputCol("featuresScaled")
+
 
     val mlr = new LogisticRegression()
       .setMaxIter(10)
@@ -95,12 +100,32 @@ class ListWordsFreqTest extends AbstractSparkTest {
       .setElasticNetParam(0.4)
       .setFamily("multinomial")
 
-    val scaler = new MaxAbsScaler().setInputCol("features").setOutputCol("featuresScaled")
-    val pipeline = new Pipeline().setStages(Array(regexTokenizer, sWtrans, scaler, mlr))
+    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, scaler, mlr))
 
     val model = pipeline.fit(trainDS)
-    model.transform(testDS).show()
 
+    val trainRes = model.transform(trainDS)
+    //.select("features").foreach(println(_))
+
+    val testRes = model.transform(testDS)
+    //testRes.select("features").foreach(println(_))
+    //testRes.select("featuresScaled").foreach(println(_))
+
+    val selector = new ChiSqSelector()
+      .setNumTopFeatures(1)
+      .setFeaturesCol("features")
+      .setLabelCol("label")
+      .setOutputCol("weight")
+
+    trainRes.show
+    println("***********************************")
+    testRes.show
+    println("***********************************")
+
+
+    //sqlTrans.transform(testRes).show()
+    //selector.fit(testRes).transform(testRes).select("features", "featuresScaled")
+    //.foreach(println(_))
   }
 
 }

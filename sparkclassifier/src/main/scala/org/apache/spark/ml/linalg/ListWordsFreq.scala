@@ -33,14 +33,14 @@ class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) e
 
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-
+/*
     val extendedTextDF = dataset.toDF().map { row =>
       val label = row.getAs[Float]("label")
       val extendedText = stopWords ++ row.getAs[Seq[String]]("allText")
       LabelTextCount(label, extendedText, extendedText.size)
     }
-
-    cvModel.transform(extendedTextDF)
+*/
+    cvModel.transform(dataset)
   }
 
   override def copy(extra: ParamMap): Transformer = ???

@@ -34,6 +34,12 @@
             <artifactId>spark-mllib_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.scalaj/scalaj-http_2.10 -->
+        <dependency>
+            <groupId>org.scalaj</groupId>
+            <artifactId>scalaj-http_2.10</artifactId>
+            <version>0.3.4</version>
+        </dependency>
 
 
         <dependency>
