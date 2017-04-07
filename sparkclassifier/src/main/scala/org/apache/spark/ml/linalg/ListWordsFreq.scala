@@ -1,7 +1,7 @@
 package org.apache.spark.ml.linalg
 
 import org.apache.spark.ml.Transformer
-import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel, Interaction, VectorAssembler}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasInputCol, HasOutputCol}
 import org.apache.spark.ml.util._
@@ -28,27 +28,43 @@ class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) e
 
   val cvModel: CountVectorizerModel = new CountVectorizer()
     .setInputCol("allText")
-    .setOutputCol("features")
+    .setOutputCol("countedFeatures")
     .fit(LIST_WORDS_LABEL_TERMS.toDS())
 
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-/*
-    val extendedTextDF = dataset.toDF().map { row =>
-      val label = row.getAs[Float]("label")
-      val extendedText = stopWords ++ row.getAs[Seq[String]]("allText")
-      LabelTextCount(label, extendedText, extendedText.size)
+
+    val countVectorizeDF = cvModel.transform(dataset)
+
+    val wordFreqUDF = udf { document: Seq[String] =>
+      1.0 / document.size
     }
-*/
-    cvModel.transform(dataset)
+    val freqWordDF = countVectorizeDF.withColumn("oneWordFreq", wordFreqUDF(col("allText")))
+    val assembler = new VectorAssembler().
+      setInputCols(Array("countedFeatures")).
+      setOutputCol("assembledWordFreq")
+
+    val assembledWordFreqDF = assembler.transform(freqWordDF)
+
+    val interaction = new Interaction()
+      .setInputCols(Array("oneWordFreq", "assembledWordFreq"))
+      .setOutputCol("features")
+
+    interaction.transform(assembledWordFreqDF)
+
   }
 
-  override def copy(extra: ParamMap): Transformer = ???
+  override def copy(extra: ParamMap): Transformer
 
-  override def transformSchema(schema: StructType): StructType = {
+  = ???
+
+  override def transformSchema(schema: StructType): StructType
+
+  = {
     SchemaUtils.appendColumn(schema, "features", new VectorUDT(), false)
   }
 
-  override val uid: String = "1234"
+  override val uid: String =
+    "1234"
 
 }
