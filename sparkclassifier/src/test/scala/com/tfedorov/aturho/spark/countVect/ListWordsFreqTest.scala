@@ -28,10 +28,10 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 83)))
 
     val testRDD = sparkSession.read.text("../output/raw/testRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 83)))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 82)))
 
     import sparkSession.implicits._
-    val trainDS = trainRDD.groupBy(_.label).map(_._2.reduce(_ + _)).toDS()
+    val trainDS = trainRDD.map(sentLab => (sentLab.label, sentLab)).reduceByKey(_ + _).map(_._2).toDS()
     val testDS = testRDD.toDS()
 
     val regexTokenizer = new RegexTokenizer()
