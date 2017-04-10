@@ -43,7 +43,6 @@ class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) e
     val assembler = new VectorAssembler().
       setInputCols(Array("countedFeatures")).
       setOutputCol("assembledWordFreq")
-
     val assembledWordFreqDF = assembler.transform(freqWordDF)
 
     val interaction = new Interaction()
@@ -51,7 +50,6 @@ class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) e
       .setOutputCol("features")
 
     interaction.transform(assembledWordFreqDF)
-
   }
 
   override def copy(extra: ParamMap): Transformer

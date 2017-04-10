@@ -49,7 +49,7 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .setElasticNetParam(0.4)
       .setFamily("multinomial")
 
-    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, /*scaler,*/ mlr))
+    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, mlr))
 
     val model = pipeline.fit(trainDS)
 
