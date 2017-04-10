@@ -1,7 +1,6 @@
 .idea/
 etl/target
 */*.iml
-output/
 sparkclassifier/target/
 etl/src/main/resources/
 etl/src/test/

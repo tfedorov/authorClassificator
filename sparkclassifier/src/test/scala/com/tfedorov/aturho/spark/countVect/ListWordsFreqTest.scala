@@ -1,12 +1,10 @@
 package com.tfedorov.aturho.spark.countVect
 
 import com.tfedorov.aturho.spark.AbstractSparkTest
-import com.tfedorov.aturho.spark.tf.Word
-import countVect.LabelTextCount
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature._
-import org.apache.spark.ml.linalg.{ListWordsFreq, Vectors}
+import org.apache.spark.ml.linalg.ListWordsFreq
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.testng.annotations.Test
@@ -49,7 +47,10 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .setElasticNetParam(0.4)
       .setFamily("multinomial")
 
-    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, mlr))
+    val sqlTrans = new SQLTransformer().setStatement(
+      "SELECT allText, label, prediction, (label == prediction) AS Diff FROM __THIS__")
+
+    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, mlr, sqlTrans))
 
     val model = pipeline.fit(trainDS)
 
