@@ -1,18 +1,16 @@
-package com.tfedorov.aturho.spark.countVect
+package com.tfedorov.aturho.spark.model
 
 import com.tfedorov.aturho.spark.AbstractSparkTest
-import com.tfedorov.aturho.spark.model.{CountPipelineBuilder, FreqPipelineBuilder}
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.feature._
-import org.apache.spark.ml.linalg.{ListWordsCount, ListWordsFreq, SparseVector}
-import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.apache.spark.sql.functions.{col, input_file_name}
+import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.testng.annotations.Test
 
 /**
   * Created by Taras_Fedorov on 2/23/2017.
   */
+
+
 case class SentenceLabel(sentence: String, label: Float) {
   def +(newOne: SentenceLabel): SentenceLabel = {
     SentenceLabel(this.sentence + " " + newOne.sentence, this.label)
@@ -29,9 +27,9 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
     val trainDSMerged: Dataset[SentenceLabel] = trainDS.rdd.map(sentLab => (sentLab.label, sentLab)).reduceByKey(_ + _).map(_._2).toDS
     val pipeline: Pipeline = FreqPipelineBuilder()
 
-    val model = pipeline.fit(trainDSMerged)
+    val model = pipeline.fit(trainDS)
 
-    val trainResults = model.transform(trainDSMerged)
+    val trainResults = model.transform(trainDS)
     val testResults = model.transform(testDS)
 
     printResults(trainResults, testResults)

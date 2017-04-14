@@ -1,6 +1,6 @@
 package com.tfedorov.aturho.spark.countVect
 
-import com.tfedorov.aturho.spark.AbstractSparkTest
+import com.tfedorov.aturho.spark.{AbstractSparkTest, model}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature._
@@ -9,6 +9,11 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.testng.annotations.Test
 
+case class SentenceLabel(sentence: String, label: Float) {
+  def +(newOne: model.SentenceLabel): model.SentenceLabel = {
+    model.SentenceLabel(this.sentence + " " + newOne.sentence, this.label)
+  }
+}
 
 class ListWordsCountTest extends AbstractSparkTest with Serializable {
 
