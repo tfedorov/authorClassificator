@@ -4,7 +4,7 @@ import com.tfedorov.aturho.spark.AbstractSparkTest
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature._
-import org.apache.spark.ml.linalg.ListWordsFreq
+import org.apache.spark.ml.linalg.{ListWordsFreq, SparseVector}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.testng.annotations.Test
@@ -37,7 +37,6 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .setOutputCol("allText")
       .setPattern("""[ ,.!?№()-/—\\"_$]""") // alternatively .setPattern("\\w+").setGaps(false)
 
-
     val listWordsFreq = new ListWordsFreq()
 
     val mlr = new LogisticRegression()
@@ -48,7 +47,7 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .setFamily("multinomial")
 
     val sqlTrans = new SQLTransformer().setStatement(
-      "SELECT allText, label, prediction, (label == prediction) AS Diff FROM __THIS__")
+      "SELECT *, (label == prediction) AS Diff FROM __THIS__")
 
     val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, mlr, sqlTrans))
 
@@ -58,11 +57,12 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
     val testRes = model.transform(testDS)
 
     println("***************TRAIN RESULTS******")
-    trainRes.show
-    println("***********************************")
-    println("")
+    //trainRes.show
+    trainRes.select("countedFeatures").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
+    println("***********************************\n")
     println("***************TEST RESULTS********")
-    testRes.show
+    testRes.select("countedFeatures").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
+    //testRes.show
     println("***********************************")
 
   }

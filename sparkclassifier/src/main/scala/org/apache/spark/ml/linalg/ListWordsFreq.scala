@@ -14,8 +14,7 @@ import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
   */
 object ListWordsFreq {
 
-  val LIST_WORDS_DEFAULT = Seq("від", "навіть", "про", "які", "до", "та",
-    "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
+  val LIST_WORDS_DEFAULT = Seq("від", "навіть", "про", "які", "до", "та", "як", "із", "що", "під", "на", "не", "для", "за", "тому", "це")
 }
 
 class ListWordsFreq(stopWords: Seq[String] = ListWordsFreq.LIST_WORDS_DEFAULT) extends Transformer with HasInputCol with HasOutputCol with DefaultParamsWritable {
