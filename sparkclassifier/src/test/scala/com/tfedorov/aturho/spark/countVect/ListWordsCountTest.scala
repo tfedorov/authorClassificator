@@ -4,21 +4,13 @@ import com.tfedorov.aturho.spark.AbstractSparkTest
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature._
-import org.apache.spark.ml.linalg.{ListWordsFreq, SparseVector}
+import org.apache.spark.ml.linalg.{ListWordsCount, SparseVector}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.testng.annotations.Test
 
-/**
-  * Created by Taras_Fedorov on 2/23/2017.
-  */
-case class SentenceLabel(sentence: String, label: Float) {
-  def +(newOne: SentenceLabel): SentenceLabel = {
-    SentenceLabel(this.sentence + " " + newOne.sentence, this.label)
-  }
-}
 
-class ListWordsFreqTest extends AbstractSparkTest with Serializable {
+class ListWordsCountTest extends AbstractSparkTest with Serializable {
 
   @Test
   def testRegexTokenizer(): Unit = {
@@ -29,7 +21,7 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 82)))
 
     import sparkSession.implicits._
-    val trainDS = trainRDD.map(sentLab => (sentLab.label, sentLab)).reduceByKey(_ + _).map(_._2).toDS()
+    val trainDS = trainRDD.toDS()
     val testDS = testRDD.toDS()
 
     val regexTokenizer = new RegexTokenizer()
@@ -37,19 +29,19 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
       .setOutputCol("allText")
       .setPattern("""[ ,.!?№()-/—\\"_$]""") // alternatively .setPattern("\\w+").setGaps(false)
 
-    val listWordsFreq = new ListWordsFreq()
+    val listWordsCount = new ListWordsCount()
 
     val mlr = new LogisticRegression()
-      .setMaxIter(10)
-      .setRegParam(0.3)
+      .setMaxIter(1000)
+      .setRegParam(0.1)
       .setFeaturesCol("features")
-      .setElasticNetParam(0.4)
+      .setElasticNetParam(0.1)
       .setFamily("multinomial")
 
     val sqlTrans = new SQLTransformer().setStatement(
       "SELECT *, (label == prediction) AS Diff FROM __THIS__")
 
-    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsFreq, mlr, sqlTrans))
+    val pipeline = new Pipeline().setStages(Array(regexTokenizer, listWordsCount, mlr, sqlTrans))
 
     val model = pipeline.fit(trainDS)
 
@@ -58,10 +50,10 @@ class ListWordsFreqTest extends AbstractSparkTest with Serializable {
 
     println("***************TRAIN RESULTS******")
     trainRes.show
-    //trainRes.select("countedFeatures").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
+    trainRes.select("features").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
     println("***********************************\n")
     println("***************TEST RESULTS********")
-    //testRes.select("countedFeatures").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
+    testRes.select("features").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
     testRes.show
     println("***********************************")
 
