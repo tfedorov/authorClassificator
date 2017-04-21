@@ -2,7 +2,7 @@ package com.tfedorov.aturho.spark.model
 
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.feature.{RegexTokenizer, SQLTransformer}
+import org.apache.spark.ml.feature._
 import org.apache.spark.ml.linalg.ListWordsFreq
 
 /**
@@ -19,8 +19,8 @@ object FreqPipelineBuilder {
     val listWordsFreq = new ListWordsFreq()
 
     val mlr = new LogisticRegression()
-      .setMaxIter(10)
-      .setRegParam(0.3)
+      .setMaxIter(1000)
+      .setRegParam(0.1)
       .setFeaturesCol("features")
       .setElasticNetParam(0.4)
       .setFamily("multinomial")

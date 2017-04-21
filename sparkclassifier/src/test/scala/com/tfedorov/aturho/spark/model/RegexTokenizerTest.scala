@@ -2,6 +2,7 @@ package com.tfedorov.aturho.spark.model
 
 import com.tfedorov.aturho.spark.AbstractSparkTest
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.linalg.{DenseVector, ListWordsFreq, SparseVector}
 import org.apache.spark.sql.functions.{col, input_file_name}
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.testng.annotations.Test
@@ -23,13 +24,14 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
   def testFreq(): Unit = {
     val (trainDS: Dataset[SentenceLabel], testDS: Dataset[SentenceLabel]) = extractTrainTestsDS()
 
-    import sparkSession.implicits._
-    val trainDSMerged: Dataset[SentenceLabel] = trainDS.rdd.map(sentLab => (sentLab.label, sentLab)).reduceByKey(_ + _).map(_._2).toDS
+    //import sparkSession.implicits._
+    //val trainDSRes: Dataset[SentenceLabel] = trainDS.rdd.map(sentLab => (sentLab.label, sentLab)).reduceByKey(_ + _).map(_._2).toDS
+    val trainDSRes = trainDS
     val pipeline: Pipeline = FreqPipelineBuilder()
 
-    val model = pipeline.fit(trainDS)
+    val model = pipeline.fit(trainDSRes)
 
-    val trainResults = model.transform(trainDS)
+    val trainResults = model.transform(trainDSRes)
     val testResults = model.transform(testDS)
 
     printResults(trainResults, testResults)
@@ -40,6 +42,9 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
   @Test
   def testCount(): Unit = {
     val (trainDS: Dataset[SentenceLabel], testDS: Dataset[SentenceLabel]) = extractTrainTestsDS()
+
+    //import sparkSession.implicits._
+    // val trainDSMerged: Dataset[SentenceLabel] = trainDS.rdd.map(sentLab => (sentLab.label, sentLab)).reduceByKey(_ + _).map(_._2).toDS
 
     val pipeline: Pipeline = CountPipelineBuilder()
 
@@ -56,12 +61,24 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
   private def printResults(trainRes: DataFrame, testRes: DataFrame) = {
     println("***************TRAIN RESULTS******")
     trainRes.show
-    //trainRes.select("features").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
-    println("***********************************\n")
+    println("***************TRAIN FEATURES******")
+    trainRes.select("features", "sentence", "Diff").foreach(r => printVector(r.get(0), r.getString(1), r.getBoolean(2)))
     println("***************TEST RESULTS********")
-    //testRes.select("features").foreach(r => println(r.get(0).asInstanceOf[SparseVector].values.mkString(",")))
     testRes.show
-    println("***********************************")
+    println("***************TEST FEATURES******")
+    testRes.select("features", "sentence", "Diff").foreach(r => printVector(r.get(0), r.getString(1), r.getBoolean(2)))
+    println("***************ESTIMATE******")
+    testRes.select("Diff").groupBy("Diff").count().show()
+  }
+
+  def printVector(anyVector: Any, sentenceAll: String, diff: Boolean): Unit = {
+    val sentence = "\"" + sentenceAll.substring(0, 10) + "\""
+    if (anyVector.isInstanceOf[DenseVector])
+      return println(sentence + "," + anyVector.asInstanceOf[DenseVector].values.mkString(",") + "," + diff)
+    if (anyVector.isInstanceOf[SparseVector])
+      return println(sentence + "," + anyVector.asInstanceOf[SparseVector].values.mkString(",") + "," + diff)
+    println(sentence + "," + anyVector + "," + diff)
+
   }
 
   private def extractTrainTestsDS() = {
@@ -78,7 +95,7 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
   }
 
   private def textFromFile(file: Row) = {
-    file.getString(1).toLowerCase
+    file.getString(1).toLowerCase + ListWordsFreq.STOP_WORDS
   }
 
   private def labelFromFile(file: Row, labelPosition: Int) = {
