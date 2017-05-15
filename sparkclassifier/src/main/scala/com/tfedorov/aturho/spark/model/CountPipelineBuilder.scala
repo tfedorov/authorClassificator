@@ -21,7 +21,7 @@ object CountPipelineBuilder {
       .setMaxIter(1000)
       .setRegParam(0.1)
       .setFeaturesCol("features")
-      .setElasticNetParam(0.1)
+      .setElasticNetParam(0.01)
       .setFamily("multinomial")
 
     val sqlTrans = new SQLTransformer().setStatement(

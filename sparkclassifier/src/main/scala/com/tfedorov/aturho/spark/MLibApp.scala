@@ -1,45 +1,59 @@
 package com.tfedorov.aturho.spark
 
-import com.tfedorov.aturho.spark.w2v.Word2VecProcessing
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
+import com.tfedorov.aturho.spark.model.FreqPipelineBuilder
+import org.apache.spark.SparkContext
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.linalg.ListWordsFreq
+import org.apache.spark.sql.functions.{col, input_file_name}
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
 /**
   * Created by Taras_Fedorov on 2/15/2017.
   */
 object MLibApp extends App {
 
-  val OUTPUT_FOLDER = "D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\*"
+  case class SentenceLabel(sentence: String, label: Float) {
+    def +(newOne: SentenceLabel): SentenceLabel = {
+      SentenceLabel(this.sentence + " " + newOne.sentence, this.label)
+    }
+  }
 
-
-  val sqlContext = SparkSession.builder.
+  val sparkSession: SparkSession = SparkSession.builder.
     master("local")
-    .appName("spark session example")
+    .appName("spark test")
     .getOrCreate()
+  val sc: SparkContext = sparkSession.sparkContext
 
+  val (trainDS: Dataset[SentenceLabel], testDS: Dataset[SentenceLabel]) = extractTrainTestsDS()
 
-  val sc = sqlContext.sparkContext
-  val resRDD = sqlContext.read.text(OUTPUT_FOLDER).select(input_file_name, col("value"))
-    .rdd.map(el => (Seq(el.get(1).toString), el.get(0).toString.charAt(66).asDigit - 1 * 1.0))
+  val pipeline: Pipeline = FreqPipelineBuilder()
 
-  //.as[(String, String)] // Optionally convert to Dataset
-  // or
+  val model = pipeline.fit(trainDS)
 
-  //resRDD.foreach(el => println(el._1))
+  val trainResults = model.transform(trainDS)
+  val testResults = model.transform(testDS)
 
-  val trainingDF = sqlContext.createDataFrame(resRDD).toDF("text", "label")
-  val testDF = sqlContext.createDataFrame(Seq((4L, Seq("тому")), (5L, Seq("що")), (6L, Seq("раз")))).toDF("id", "text")
+  trainResults.show()
+  testResults.show()
 
-  // val pipeline = HashingTFModel()
-  //val w2vProcessing = Word2VecProcessing()
-  //val hashingTFmodel = pipeline.fit(trainingDF)
+  private def extractTrainTestsDS() = {
+    val trainRDD = sparkSession.read.text("output/raw/trainRawData*").select(input_file_name, col("value"))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 83)))
 
-  //val word2vecM = w2vProcessing.fit(trainingDF)
-  //word2vecM.transform(trainingDF).foreach(println(_))
+    val testRDD = sparkSession.read.text("output/raw/testRawData*").select(input_file_name, col("value"))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 82)))
 
-  // Make predictions on test documents.
-  //val prediction = hashingTFmodel.transform(testDF)
+    import sparkSession.implicits._
+    val trainDS = trainRDD.toDS()
+    val testDS = testRDD.toDS()
+    (trainDS, testDS)
+  }
 
-  //prediction.collect().foreach(println(_))
+  private def textFromFile(file: Row) = {
+    file.getString(1).toLowerCase + ListWordsFreq.STOP_WORDS
+  }
 
+  private def labelFromFile(file: Row, labelPosition: Int) = {
+    (file.get(0).toString.charAt(labelPosition).asDigit).toFloat
+  }
 }

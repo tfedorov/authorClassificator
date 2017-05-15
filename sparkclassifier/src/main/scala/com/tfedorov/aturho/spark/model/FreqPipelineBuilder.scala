@@ -19,10 +19,10 @@ object FreqPipelineBuilder {
     val listWordsFreq = new ListWordsFreq()
 
     val mlr = new LogisticRegression()
-      .setMaxIter(1000)
-      .setRegParam(0.1)
+      .setMaxIter(10000)
+      .setRegParam(0.01)
       .setFeaturesCol("features")
-      .setElasticNetParam(0.4)
+      .setElasticNetParam(0.1)
       .setFamily("multinomial")
 
     val sqlTrans = new SQLTransformer().setStatement(
