@@ -13,10 +13,10 @@ class HashingTFTest extends AbstractSparkTest {
   @Test
   def testHashingTF(): Unit = {
 
-    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
+    val trainRDD = sparkSession.read.text("C:\\work\\workspace\\private\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (Seq(el.get(1).toString), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
-    val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
+    val testRDD = sc.textFile("C:\\work\\workspace\\private\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values
 
     val trainingDF = sparkSession.createDataFrame(trainRDD).toDF("text", "label")
 

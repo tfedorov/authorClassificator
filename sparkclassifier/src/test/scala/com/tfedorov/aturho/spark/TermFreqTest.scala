@@ -14,7 +14,7 @@ class TermFreqTest extends AbstractSparkTest {
   @Test
   def testTF(): Unit = {
 
-    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
+    val trainRDD = sparkSession.read.text("C:\\work\\workspace\\private\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
     //val testRDD = sc.textFile("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\2_future").map((1, _)).groupByKey().values

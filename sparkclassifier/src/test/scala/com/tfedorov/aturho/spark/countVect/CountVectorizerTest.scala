@@ -14,10 +14,10 @@ class CountVectorizerTest extends AbstractSparkTest {
 
   @Test
   def testCountVectSimple(): Unit = {
-    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
+    val trainRDD = sparkSession.read.text("C:\\work\\workspace\\private\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
-    val testRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\*").select(input_file_name, col("value"))
+    val testRDD = sparkSession.read.text("C:\\work\\workspace\\private\\authorClassificator\\output\\test\\*").select(input_file_name, col("value"))
       .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(71).asDigit).toFloat))
 
     import sparkSession.implicits._
@@ -29,10 +29,10 @@ class CountVectorizerTest extends AbstractSparkTest {
 
   @Test
   def testCountVectPipeline(): Unit = {
-    val trainRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
+    val trainRDD = sparkSession.read.text("C:\\work\\workspace\\private\\authorClassificator\\output\\train\\*").select(input_file_name, col("value"))
       .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(72).asDigit).toFloat))
 
-    val testRDD = sparkSession.read.text("D:\\work\\workspace\\pet_projects\\authorClassificator\\output\\test\\*").select(input_file_name, col("value"))
+    val testRDD = sparkSession.read.text("C:\\work\\workspace\\private\\authorClassificator\\output\\test\\*").select(input_file_name, col("value"))
       .rdd.map(el => (el.getString(1), (el.get(0).toString.charAt(71).asDigit).toFloat))
 
     import sparkSession.implicits._
