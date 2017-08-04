@@ -38,7 +38,6 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
 
   }
 
-
   @Test
   def testCount(): Unit = {
     val (trainDS: Dataset[SentenceLabel], testDS: Dataset[SentenceLabel]) = extractTrainTestsDS()
@@ -56,7 +55,6 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
     printResults(trainResults, testResults)
 
   }
-
 
   private def printResults(trainRes: DataFrame, testRes: DataFrame) = {
     println("***************TRAIN RESULTS******")
@@ -83,10 +81,10 @@ class RegexTokenizerTest extends AbstractSparkTest with Serializable {
 
   private def extractTrainTestsDS() = {
     val trainRDD = sparkSession.read.text("../output/raw/trainRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 83)))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 80)))
 
     val testRDD = sparkSession.read.text("../output/raw/testRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 82)))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 79)))
 
     import sparkSession.implicits._
     val trainDS = trainRDD.toDS()

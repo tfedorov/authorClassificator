@@ -17,13 +17,13 @@ case class SentenceLabel(sentence: String, label: Float) {
 
 class ListWordsCountTest extends AbstractSparkTest with Serializable {
 
-  @Test
+  @Test(enabled = false)
   def testRegexTokenizer(): Unit = {
     val trainRDD = sparkSession.read.text("../output/raw/trainRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 83)))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 80)))
 
     val testRDD = sparkSession.read.text("../output/raw/testRawData*").select(input_file_name, col("value"))
-      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 82)))
+      .rdd.map(file => SentenceLabel(textFromFile(file), labelFromFile(file, 79)))
 
     import sparkSession.implicits._
     val trainDS = trainRDD.toDS()
